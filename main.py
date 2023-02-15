@@ -1,9 +1,12 @@
+import argparse
+
 from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
+
 from gramLexer import gramLexer
 from gramListener import gramListener
 from gramParser import gramParser
 from mdp import MDP
-import sys
+import strategies
 
 
 class gramMDPListener(gramListener):
@@ -33,19 +36,32 @@ class gramMDPListener(gramListener):
             self.mdp.update_proba(dep, target, None, weight)
 
 
-def main(filename):
+def main(filename, initial = None, n_steps = 0, strategy = 'ask_user', verbose=False):
+    # lexer and grammar
     lexer = gramLexer(FileStream(filename))
     stream = CommonTokenStream(lexer)
     parser = gramParser(stream)
     tree = parser.program()
     MDP_parser = gramMDPListener()
     walker = ParseTreeWalker()
+    # parse file
     walker.walk(MDP_parser, tree)
     mdp = MDP_parser.mdp
     mdp.build()
     print(mdp)
-    mdp.simulate(n_steps=10)
+    mdp.simulate(initial, n_steps, strategy, verbose)
+
 
 if __name__ == '__main__':
-    main(*sys.argv[1:])
-
+    # arg parse
+    parser = argparse.ArgumentParser(
+        prog = 'python main.py',
+        description = 'Markov Decision Process Chains Analyser')
+    parser.add_argument('filename')
+    parser.add_argument('-i', '--initial', help="Initial state label for the simulation.")
+    parser.add_argument('-n', '--number-of-steps', type=int, dest='n_steps', help="Number of steps to apply for the simulation.")
+    parser.add_argument('-s', '--strategy', help="Strategy to use for the simulation.")
+    parser.add_argument('-v', '--verbose', help="Show all prints or not.", action='store_true')
+    kwargs = vars(parser.parse_args())
+    print(kwargs)
+    main(**kwargs)

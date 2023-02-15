@@ -1,13 +1,5 @@
 import numpy as np
-
-
-def ask_user_strategy(history: list[int], mdp: 'MDP') -> int:
-    """Renvoie une action en fonction de l'historique."""
-    action = None
-    possible_actions = [mdp.actions_labels[a] for a in mdp.actions_from(history[-1])]
-    while not action in possible_actions:
-        action = input(f"\tChoisissez l'action parmis {possible_actions} : ")
-    return mdp.actions_id[action]
+import strategies as strategy_module
 
 
 class MDP:
@@ -69,6 +61,9 @@ class MDP:
                 raise Exception(
                     f"The state {self.states_labels[s]} has transitions with "
                     " AND without actions.")
+            if len(possible_actions) == 0:
+                raise Exception(
+                    f"Aucune action possible depuis {self.states_labels[s]}")
 
     def build(self):
         """Validate and build the network."""
@@ -95,21 +90,25 @@ class MDP:
             ]
         ])
 
-    def simulate(self, initial=0, n_steps=3, strategy=ask_user_strategy, verbose=True) -> list[int]:
+    def simulate(self, initial=None, n_steps=3, strategy='ask_user', verbose=True) -> list[int]:
         """Simulate n_steps in the MDP and returns the list of steps followed."""
-        path = [initial]  # L'état initial est le premier état par défaut
-        if verbose:
-            print(f"Initial state : {self.states_labels[initial]}")
+        strategy_func = getattr(strategy_module, strategy)
+        if initial is None:
+            initial = self.states_labels[0]  # L'état initial est le premier état par défaut
+        print(f"Start simulation from {initial} "
+                f"with {n_steps} steps...")
+        path = [self.states_id[initial]]
         for step in range(n_steps):
             if verbose:
                 print(f"Step {step}")
+                print(f"\tState : {self.states_labels[path[-1]]}")
             current_state = path[-1]
             # Sélection de l'action
             possible_actions = self.actions_from(current_state)
             if len(possible_actions) == 1:
                 action = possible_actions[0]
             else:
-                action = strategy(path, self)
+                action = strategy_func(path, self)
             if verbose:
                 print(f"\tAction : {self.actions_labels[action]}")
             # Tirage aléatoire de la transition
@@ -117,6 +116,5 @@ class MDP:
                 self.nb_states,
                 p=self.probas[current_state, action])
             path.append(next_state)
-            if verbose:
-                print(f"\tState : {self.states_labels[next_state]}")
+        print(f"Final State: {self.states_labels[path[-1]]}")
         return path
