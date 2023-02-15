@@ -60,3 +60,30 @@ class MDP:
                 if S[i][j] != 0:
                     for k in range(len(self.probas[i][j])):
                         self.probas[i][j][k] = self.probas[i][j][k]/S[i][j]
+
+    def actionsFrom(self,current_state):
+        possible_actions = []
+        for action in self.actions:
+            if np.sum(self.probas[current_state][action]) != 0:
+                possible_actions.append(action)
+        return possible_actions
+
+    def simulate(self,n_steps=3,strategy=None):
+        path = [self.states[0]] #L'état intitial est le premeir état par défaut
+        for step in range(n_steps):
+            current_state = path[-1]
+            #Sélection de l'action
+            possible_actions = 
+            if strategy is None:
+                correct = False
+                print(f"Choisissez l'action à réaliser dans l'état {current_state} parmis {self.actions}")
+                while not correct:
+                    action = input()
+                    if action not in self.actions:
+                        print("L'action entrée est incorrecte")
+                    elif np.sum(self.probas[current_state][action]) == 0:
+                        print("L'action entrée n'est pas disponible depuis cet état")
+                    else:
+                        correct = True
+            else:
+                action = strategy(current_state) #TODO : prendre en compte l'historique des actions.
