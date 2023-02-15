@@ -1,21 +1,33 @@
 import numpy as np
 
+
+def ask_user_strategy(history: list[int], mdp: 'MDP') -> int:
+    """Renvoie une action en fonction de l'historique."""
+    action = None
+    possible_actions = [mdp.actions_labels[a] for a in mdp.actions_from(history[-1])]
+    while not action in possible_actions:
+        action = input(f"\tChoisissez l'action parmis {possible_actions} : ")
+    return mdp.actions_id[action]
+
+
 class MDP:
 
     def add_states(self, states: list[str]) -> None:
         """Create the states list."""
         assert not hasattr(self, 'states'), "States already defined."
-        self.states = states
+        self.states_labels = states
         self.states_id = {state: i for i, state in enumerate(states)}
+        self.nb_states = len(self.states_labels)
 
-    def add_actions(self, actions: list[str]) -> None:
+    def add_actions(self, actions: list[str | None]) -> None:
         """Create the actions list."""
         assert not hasattr(self, 'actions'), "Actions already defined."
-        self.actions = [None] + actions
-        self.actions_id = {action: i for i, action in enumerate(self.actions)}
-        self.probas = np.zeros((len(self.states), len(self.actions), len(self.states)))
+        self.actions_labels = [None] + actions
+        self.actions_id = {action: i for i, action in enumerate(self.actions_labels)}
+        self.nb_actions = len(self.actions_labels)
+        self.probas = np.zeros((self.nb_states, self.nb_actions, self.nb_states))
 
-    def update_proba(self, source_state: str, target_state: str, action: str, proba: float) -> None:
+    def update_proba(self, source_state: str, target_state: str, action: str | None, proba: float) -> None:
         """Update a proba from one source state to another target state through an action.
 
         Args:
@@ -24,66 +36,87 @@ class MDP:
             action (str): The action label for this edge
             proba (float): The probability to take this edge for this action
         """
-        assert source_state in self.states, f"Source state {source_state} is not declared."
-        assert target_state in self.states, f"Target state {target_state} is not declared."
-        assert action in self.actions, f"Action {action} is not declared."
+        assert source_state in self.states_labels, f"Source state {source_state} is not declared."
+        assert target_state in self.states_labels, f"Target state {target_state} is not declared."
+        assert action in self.actions_labels, f"Action {action} is not declared."
         source_id = self.states_id[source_state]
         target_id = self.states_id[target_state]
         action_id = self.actions_id[action]
         self.probas[source_id, action_id, target_id] = proba
 
+    def normalize(self):
+        """transform transitions weights to probas"""
+        S = np.sum(self.probas, axis=(2))
+        for i in range(S.shape[0]):
+            for j in range(S.shape[1]):
+                if S[i, j]:
+                    for k in range(self.nb_states):
+                        self.probas[i, j, k] = self.probas[i, j, k] / S[i, j]
+
+    def actions_from(self, current_state: int) -> list[int]:
+        """Returns the list of actions available from a state."""
+        possible_actions = []
+        for action in range(self.nb_actions):
+            if np.sum(self.probas[current_state][action]):
+                possible_actions.append(action)
+        return possible_actions
+
+    def check_actions_coherence(self):
+        """Check that no state has transitions with and without actions"""
+        for s in range(self.nb_states):
+            possible_actions = self.actions_from(s)
+            if None in possible_actions and len(possible_actions) != 1:
+                raise Exception(
+                    f"The state {self.states_labels[s]} has transitions with "
+                    " AND without actions.")
+
+    def build(self):
+        """Validate and build the network."""
+        self.normalize()
+        self.check_actions_coherence()
+
     def __repr__(self):
         """Returns a representation of the graph """
         return "\n".join([
-            f"States: {self.states}",
-            f"Actions: {self.actions}",
+            f"States: {self.states_labels}",
+            f"Actions: {self.actions_labels}",
             *[
                 (f"{state} [{action}] -> " if action else f"{state} -> ")
                 + str({
                     s: w 
                     for s, w in zip(
-                        self.states,
+                        self.states_labels,
                         self.probas[self.states_id[state], self.actions_id[action]])
                     if w
                 })[1:-1]
-                for action in self.actions
-                for state in self.states
+                for action in self.actions_labels
+                for state in self.states_labels
                 if np.any(self.probas[self.states_id[state], self.actions_id[action]])
             ]
         ])
 
-    def normalize(self):
-        """transform transitions weights to probas"""
-        S = np.sum(self.probas,axis=(2))
-        for i in range(S.shape[0]):
-            for j in range(S.shape[1]):
-                if S[i][j] != 0:
-                    for k in range(len(self.probas[i][j])):
-                        self.probas[i][j][k] = self.probas[i][j][k]/S[i][j]
-
-    def actionsFrom(self,current_state):
-        possible_actions = []
-        for action in self.actions:
-            if np.sum(self.probas[current_state][action]) != 0:
-                possible_actions.append(action)
-        return possible_actions
-
-    def simulate(self,n_steps=3,strategy=None):
-        path = [self.states[0]] #L'état intitial est le premeir état par défaut
+    def simulate(self, initial=0, n_steps=3, strategy=ask_user_strategy, verbose=True) -> list[int]:
+        """Simulate n_steps in the MDP and returns the list of steps followed."""
+        path = [initial]  # L'état initial est le premier état par défaut
+        if verbose:
+            print(f"Initial state : {self.states_labels[initial]}")
         for step in range(n_steps):
+            if verbose:
+                print(f"Step {step}")
             current_state = path[-1]
-            #Sélection de l'action
-            possible_actions = 
-            if strategy is None:
-                correct = False
-                print(f"Choisissez l'action à réaliser dans l'état {current_state} parmis {self.actions}")
-                while not correct:
-                    action = input()
-                    if action not in self.actions:
-                        print("L'action entrée est incorrecte")
-                    elif np.sum(self.probas[current_state][action]) == 0:
-                        print("L'action entrée n'est pas disponible depuis cet état")
-                    else:
-                        correct = True
+            # Sélection de l'action
+            possible_actions = self.actions_from(current_state)
+            if len(possible_actions) == 1:
+                action = possible_actions[0]
             else:
-                action = strategy(current_state) #TODO : prendre en compte l'historique des actions.
+                action = strategy(path, self)
+            if verbose:
+                print(f"\tAction : {self.actions_labels[action]}")
+            # Tirage aléatoire de la transition
+            next_state = np.random.choice(
+                self.nb_states,
+                p=self.probas[current_state, action])
+            path.append(next_state)
+            if verbose:
+                print(f"\tState : {self.states_labels[next_state]}")
+        return path

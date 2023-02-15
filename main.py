@@ -1,4 +1,4 @@
-from antlr4 import StdinStream, CommonTokenStream, ParseTreeWalker
+from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
 from gramLexer import gramLexer
 from gramListener import gramListener
 from gramParser import gramParser
@@ -33,8 +33,8 @@ class gramMDPListener(gramListener):
             self.mdp.update_proba(dep, target, None, weight)
 
 
-def main():
-    lexer = gramLexer(StdinStream())
+def main(filename):
+    lexer = gramLexer(FileStream(filename))
     stream = CommonTokenStream(lexer)
     parser = gramParser(stream)
     tree = parser.program()
@@ -42,8 +42,10 @@ def main():
     walker = ParseTreeWalker()
     walker.walk(MDP_parser, tree)
     mdp = MDP_parser.mdp
-    mdp.normalize()
+    mdp.build()
     print(mdp)
+    mdp.simulate(n_steps=10)
 
 if __name__ == '__main__':
-    main()
+    main(*sys.argv[1:])
+
