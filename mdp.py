@@ -15,3 +15,18 @@ class MDP:
         source_id = self.states_id[source_state]
         target_id = self.states_id[target_state]
         self.probas[action][source_id, target_id] = proba
+    
+    def __repr__(self):
+        return "\n".join([
+            f"States: {self.states}",
+            f"Actions: {self.actions}",
+            *[
+                f"{state} [{action}] -> "
+                + str({s: w 
+                       for s, w in zip(self.states, self.probas[action][self.states_id[state]])
+                       if w})
+                for action in self.actions
+                for state in self.states
+                if np.any(self.probas[action][self.states_id[state]])
+            ]
+        ])
