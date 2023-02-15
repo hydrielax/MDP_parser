@@ -3,10 +3,12 @@ import numpy as np
 class MDP:
 
     def add_states(self, states: list[str]) -> None:
+        assert not hasattr(self, 'states'), "States already defined."
         self.states = states
         self.states_id = {state: i for i, state in enumerate(states)}
 
     def add_actions(self, actions: list[str]) -> None:
+        assert not hasattr(self, 'actions'), "Actions already defined."
         self.actions = [None] + actions
         self.actions_id = {action: i for i, action in enumerate(self.actions)}
         self.probas = np.zeros((len(self.states), len(self.actions), len(self.states)))
