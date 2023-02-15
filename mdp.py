@@ -35,3 +35,12 @@ class MDP:
                 if np.any(self.probas[self.states_id[state], self.actions_id[action]])
             ]
         ])
+    
+    def normalize(self):
+    #transform transitions weights to probas
+        S = np.sum(self.probas,axis=(2))
+        for i in range(S.shape[0]):
+            for j in range(S.shape[1]):
+                if S[i][j] != 0:
+                    for k in range(len(self.probas[i][j])):
+                        self.probas[i][j][k] = self.probas[i][j][k]/S[i][j]

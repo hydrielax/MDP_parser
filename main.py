@@ -42,6 +42,7 @@ def main():
     walker = ParseTreeWalker()
     walker.walk(MDP_parser, tree)
     mdp = MDP_parser.mdp
+    mdp.normalize()
     print(mdp)
 
 if __name__ == '__main__':
