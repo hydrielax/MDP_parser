@@ -1,0 +1,17 @@
+States I,CI,CC,CA,AI,AC,AA,F,T;
+Actions a,p,c;
+I[c] -> 1:CI;
+I[p] -> 2:CI + 1:AI;
+I[a] -> 1:AI;
+CI[c] -> 1:CC;
+CI[p] -> 2:CC + 1:CA;
+CI[a] -> 1:CA;
+AI[c] -> 1:AC;
+AI[p] -> 2:AC + 1:AA;
+AI[a] -> 1:AA;
+CA -> 1:F;
+AC -> 1:F;
+CC -> 1:F + 1:T;
+AA -> 1:T;
+F -> 1:F;
+T -> 1:T;
