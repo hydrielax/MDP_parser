@@ -6,7 +6,6 @@ from gramLexer import gramLexer
 from gramListener import gramListener
 from gramParser import gramParser
 from mdp import MDP
-import strategies
 
 
 class gramMDPListener(gramListener):
