@@ -34,8 +34,10 @@ class MDP:
         source_id = self.states_id[source_state]
         target_id = self.states_id[target_state]
         action_id = self.actions_id[action]
-        assert self.probas[source_id, action_id, target_id]==0, f"Transition from {self.states_labels[source_id]} \
-to {self.states_labels[target_id]} with action {self.actions_labels[action_id]} already defined"
+        assert self.probas[source_id, action_id, target_id]==0, (
+            f"Transition from {self.states_labels[source_id]} "
+            f"to {self.states_labels[target_id]} with action "
+            f"{self.actions_labels[action_id]} already defined")
         self.probas[source_id, action_id, target_id] = proba
 
     def normalize(self):
