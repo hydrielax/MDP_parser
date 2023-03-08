@@ -1,4 +1,5 @@
 import argparse
+from typing import Literal
 
 from antlr4 import FileStream, CommonTokenStream, ParseTreeWalker
 
@@ -35,9 +36,23 @@ class gramMDPListener(gramListener):
             self.mdp.update_proba(dep, target, None, weight)
 
 
-def main(filename, initial = None, n_steps = 0, strategy = 'ask_user', verbose=False):
+def main():
+    # arg parse
+    parser = argparse.ArgumentParser(
+        prog = 'python main.py',
+        description = 'Markov Decision Process Chains Analyser')
+    parser.add_argument('method', choices=['draw', 'simulate', 'smc'])
+    parser.add_argument('filename')
+    parser.add_argument('-i', '--initial-state', help="Initial state label for the simulation.", default=None)
+    parser.add_argument('-n', '--number-of-steps', type=int, dest='n_steps', help="Number of steps to apply for the simulation.", default=5)
+    parser.add_argument('-s', '--strategy', help="Strategy to use for the simulation.", default='ask_user')
+    parser.add_argument('-t', '--terminal-state', default=None)
+    parser.add_argument('-e', '--epsilon', default=0.01)
+    parser.add_argument('-d', '--delta', default=0.05)
+    parser.add_argument('-v', '--verbose', help="0: no prints; 1: main prints; 2: all prints", default=2)
+    args = parser.parse_args()
     # lexer and grammar
-    lexer = gramLexer(FileStream(filename))
+    lexer = gramLexer(FileStream(args.filename))
     stream = CommonTokenStream(lexer)
     parser = gramParser(stream)
     tree = parser.program()
@@ -46,21 +61,14 @@ def main(filename, initial = None, n_steps = 0, strategy = 'ask_user', verbose=F
     # parse file
     walker.walk(MDP_parser, tree)
     mdp = MDP_parser.mdp
-    mdp.build()
-    print(mdp)
-    mdp.simulate(initial, n_steps, strategy, verbose)
+    mdp.build(args.initial_state)
+    if args.method == 'draw':
+        print(mdp)
+    elif args.method == 'simulate':
+        mdp.simulate(args.n_steps, args.strategy, args.verbose)
+    elif args.method == 'smc':
+        mdp.smc(args.terminal_state, args.n_steps, args.epsilon, args.delta, args.verbose)
 
 
 if __name__ == '__main__':
-    # arg parse
-    parser = argparse.ArgumentParser(
-        prog = 'python main.py',
-        description = 'Markov Decision Process Chains Analyser')
-    parser.add_argument('filename')
-    parser.add_argument('-i', '--initial', help="Initial state label for the simulation.")
-    parser.add_argument('-n', '--number-of-steps', type=int, dest='n_steps', help="Number of steps to apply for the simulation.", default=5)
-    parser.add_argument('-s', '--strategy', help="Strategy to use for the simulation.", default='ask_user')
-    parser.add_argument('-v', '--verbose', help="Show all prints or not.", action='store_true', default=True)
-    kwargs = vars(parser.parse_args())
-    print(kwargs)
-    main(**kwargs)
+    main()

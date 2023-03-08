@@ -70,10 +70,14 @@ class MDP:
                 raise Exception(
                     f"Aucune action possible depuis {self.states_labels[s]}")
 
-    def build(self):
+    def build(self, initial_state):
         """Validate and build the network."""
         self.normalize()
         self.check_actions_coherence()
+        if initial_state is None:
+            self.initial_state = 0
+        else:
+            self.initial_state = self.states_id[initial_state]
 
     def __repr__(self):
         """Returns a representation of the graph """
@@ -92,19 +96,19 @@ class MDP:
                 for action in self.actions_labels
                 for state in self.states_labels
                 if np.any(self.probas[self.states_id[state], self.actions_id[action]])
-            ]
+            ],
+            f"Initial State: {self.states_labels[self.initial_state]}"
         ])
 
-    def simulate(self, initial=None, n_steps=3, strategy='ask_user', verbose=True) -> list[int]:
+    def simulate(self, n_steps: int, strategy: str, verbose: int) -> list[int]:
         """Simulate n_steps in the MDP and returns the list of steps followed."""
         strategy_func = getattr(strategy_module, strategy)
-        if initial is None:
-            initial = self.states_labels[0]  # L'état initial est le premier état par défaut
-        print(f"Start simulation from {initial} "
-                f"with {n_steps} steps...")
-        path = [self.states_id[initial]]
+        if verbose >= 1:
+            label = self.states_labels[self.initial_state]
+            print(f"Start simulation from {label} with {n_steps} steps...")
+        path = [self.initial_state]
         for step in range(n_steps):
-            if verbose:
+            if verbose >= 2:
                 print(f"Step {step}")
                 print(f"\tState : {self.states_labels[path[-1]]}")
             current_state = path[-1]
@@ -114,12 +118,28 @@ class MDP:
                 action = possible_actions[0]
             else:
                 action = strategy_func(path, self)
-            if verbose:
+            if verbose >= 2:
                 print(f"\tAction : {self.actions_labels[action]}")
             # Tirage aléatoire de la transition
             next_state = np.random.choice(
                 self.nb_states,
                 p=self.probas[current_state, action])
             path.append(next_state)
-        print(f"Final State: {self.states_labels[path[-1]]}")
+        if verbose >= 1:
+            print(f"Final State: {self.states_labels[path[-1]]}")
         return path
+
+    def smc(self, terminal_state_label: str, n_steps: int, eps: float, delta: float, verbose: int) -> float:
+        terminal_state = self.states_id[terminal_state_label]
+        N = int(np.ceil((np.log(2) - np.log(delta)) / (4*eps**2)))
+        if verbose >= 1:
+            print(f"N = {N}")
+        count = 0
+        for _ in range(N):
+            path = self.simulate(n_steps, 'random', verbose-1)
+            if path[-1] == terminal_state:
+                count += 1
+        p = count / N
+        if verbose >= 1:
+            print(f"P(M|= <>(<={n_steps}) {terminal_state_label}) = {p}")
+        return p
