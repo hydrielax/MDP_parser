@@ -5,17 +5,19 @@ import networkx as nx
 
 class MDP:
 
+    def __init__(self):
+        self.actions_labels = []
+
     def add_states(self, states: list[str]) -> None:
         """Create the states list."""
-        assert not hasattr(self, 'states'), "States already defined."
         self.states_labels = states
         self.states_id = {state: i for i, state in enumerate(states)}
         self.nb_states = len(self.states_labels)
+        self.add_actions([None])
 
     def add_actions(self, actions: list[str | None]) -> None:
         """Create the actions list."""
-        assert not hasattr(self, 'actions'), "Actions already defined."
-        self.actions_labels = [None] + actions
+        self.actions_labels += actions
         self.actions_id = {action: i for i, action in enumerate(self.actions_labels)}
         self.nb_actions = len(self.actions_labels)
         self.probas = np.zeros((self.nb_states, self.nb_actions, self.nb_states))

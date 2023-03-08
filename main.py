@@ -41,15 +41,24 @@ def main():
     parser = argparse.ArgumentParser(
         prog = 'python main.py',
         description = 'Markov Decision Process Chains Analyser')
-    parser.add_argument('method', choices=['draw', 'simulate', 'smc'])
-    parser.add_argument('filename')
-    parser.add_argument('-i', '--initial-state', help="Initial state label for the simulation.", default=None)
-    parser.add_argument('-n', '--number-of-steps', type=int, dest='n_steps', help="Number of steps to apply for the simulation.", default=5)
-    parser.add_argument('-s', '--strategy', help="Strategy to use for the simulation.", default='ask_user')
-    parser.add_argument('-t', '--terminal-state', default=None)
-    parser.add_argument('-e', '--epsilon', default=0.01)
-    parser.add_argument('-d', '--delta', default=0.05)
-    parser.add_argument('-v', '--verbose', help="0: no prints; 1: main prints; 2: all prints", default=2)
+    parser.add_argument('method', choices=['draw', 'simulate', 'smc'],
+                        help="The method to use: draw, simulate, or SMC")
+    parser.add_argument('filename',
+                        help="The name of the file.")
+    parser.add_argument('-i', '--initial-state', default=None,
+                        help="Initial state label for the simulation, defaults to the first one.")
+    parser.add_argument('-n', '--number-of-steps', type=int, dest='n_steps', default=5,
+                        help="Number of steps to apply for the simulation, defaults to 5.")
+    parser.add_argument('-s', '--strategy',  default='ask_user',
+                        help="Strategy to use for the simulation, defaults to 'ask_user'.")
+    parser.add_argument('-t', '--terminal-state', default=None,
+                        help="The terminal state, used for SMC only. Required.")
+    parser.add_argument('-e', '--epsilon', default=0.01,
+                        help="The precision, used for SMC only. Defaults to 0.01.")
+    parser.add_argument('-d', '--delta', default=0.05,
+                        help="The error rate, used for SMC only. Defaults to 0.05.")
+    parser.add_argument('-v', '--verbose', type=int, default=1, choices=[0,1,2],
+                        help="0: no prints; 1: main prints; 2: all prints")
     args = parser.parse_args()
     # lexer and grammar
     lexer = gramLexer(FileStream(args.filename))
