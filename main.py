@@ -52,20 +52,20 @@ def main():
                         help="The error rate, used for SMC only. Defaults to 0.05.")
     parser.add_argument('-e', '--epsilon', type=float, default=0.01,
                         help="The precision, used for SMC only. Defaults to 0.01.")
-    parser.add_argument('-th', '--theta', type=float, default=None,
+    parser.add_argument('-t', '--theta', type=float, default=None,
                         help="The test value compaired, used for SPRT. Required.")
-    parser.add_argument('-i', '--initial-state', default=None,
-                        help="Initial state label for the simulation, defaults to the first one.")
+    parser.add_argument('-i', '--iter-max', type=float, default=10_000,
+                        help="Max number of iterations for SPRT. Defaults to 10.000")
     parser.add_argument('-n', '--number-of-steps', type=int, dest='n_steps', default=5,
                         help="Number of steps to apply for the simulation, defaults to 5.")
     parser.add_argument('-s', '--strategy',  default='ask_user',
                         help="Strategy to use for the simulation, defaults to 'ask_user'.")
-    parser.add_argument('-t', '--terminal-state', default=None,
-                        help="The terminal state, used for SMC only. Required.")
     parser.add_argument('-v', '--verbose', type=int, default=1, choices=[0,1,2],
                         help="0: no prints; 1: main prints; 2: all prints")
-    parser.add_argument('--iter-max', type=float, default=10_000,
-                        help="Max number of iterations for SPRT. Defaults to 10.000")
+    parser.add_argument('-I', '--initial-state', default=None,
+                        help="Initial state label for the simulation, defaults to the first one.")
+    parser.add_argument('-T', '--terminal-state', default=None,
+                        help="The terminal state, used for SMC and SPRT. Required.")
     args = parser.parse_args()
     # lexer and grammar
     lexer = gramLexer(FileStream(args.filename))
