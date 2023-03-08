@@ -1,6 +1,5 @@
 import numpy as np
 import strategies as strategy_module
-import networkx as nx
 
 
 class MDP:
@@ -131,7 +130,14 @@ class MDP:
             print(f"Final State: {self.states_labels[path[-1]]}")
         return path
 
-    def smc(self, terminal_state_label: str, n_steps: int, eps: float, delta: float, verbose: int) -> float:
+    def smc(
+        self,
+        terminal_state_label: str,
+        n_steps: int,
+        eps: float,
+        delta: float,
+        verbose: int
+    ) -> float:
         terminal_state = self.states_id[terminal_state_label]
         N = int(np.ceil((np.log(2) - np.log(delta)) / (4*eps**2)))
         if verbose >= 1:
@@ -145,3 +151,37 @@ class MDP:
         if verbose >= 1:
             print(f"P(M|= <>(<={n_steps}) {terminal_state_label}) = {p}")
         return p
+
+    def sprt(
+        self,
+        terminal_state_label: str,
+        n_steps: int,
+        alpha: float,
+        beta: float,
+        eps: float,
+        theta: float,
+        iter_max: int,
+        verbose: int
+    ) -> bool | None:
+        terminal_state = self.states_id[terminal_state_label]
+        logA, logB = np.log(((1 - beta) / alpha, beta / (1 - alpha)))
+        gamma1, gamma0 = theta - eps, theta + eps
+        logRm = (logA + logB)/2
+        dm = 0
+        m = 0
+        while logB < logRm and logRm < logA and m < iter_max:
+            path = self.simulate(n_steps, 'random', verbose-1)
+            if path[-1] == terminal_state:
+                dm += 1
+            logRm = (dm * (np.log(gamma1) - np.log(gamma0)) +
+                     (m - dm) * (np.log(1 - gamma1) - np.log(1 - gamma0)))
+            m += 1
+        if logRm >= logA:
+            res = False
+        elif logRm <= logB:
+            res = True
+        else:
+            res = None
+        if verbose >= 1:
+            print(f"Résultat : {res}")
+        return res
