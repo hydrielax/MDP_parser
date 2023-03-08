@@ -166,7 +166,7 @@ class MDP:
         terminal_state = self.states_id[terminal_state_label]
         logA, logB = np.log(((1 - beta) / alpha, beta / (1 - alpha)))
         gamma1, gamma0 = theta - eps, theta + eps
-        logRm = (logA + logB)/2
+        logRm = (logA + logB) / 2
         dm = 0
         m = 0
         while logB < logRm and logRm < logA and m < iter_max:
