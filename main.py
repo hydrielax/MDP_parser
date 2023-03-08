@@ -41,7 +41,7 @@ def main():
         prog='python main.py',
         description='Markov Decision Process Chains Analyser')
     parser.add_argument('method', choices=['draw', 'simulate', 'smc', 'sprt'],
-                        help="The method to use: draw, simulate, or SMC")
+                        help="The method to use: draw, simulate, SMC, or SPRT")
     parser.add_argument('filename',
                         help="The name of the file.")
     parser.add_argument('-a', '--alpha', type=float, default=0.01,
@@ -88,6 +88,7 @@ def main():
         mdp.sprt(args.terminal_state, args.n_steps, args.alpha, args.beta,
                  args.epsilon, args.theta, args.iter_max, args.verbose)
 
+# to compile grammar: $ antlr4 -Dlanguage=Python3 gram.g4
 
 if __name__ == '__main__':
     main()
