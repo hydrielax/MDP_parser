@@ -43,8 +43,8 @@ def main():
     parser = argparse.ArgumentParser(
         prog='python main.py',
         description='Markov Decision Process Chains Analyser')
-    parser.add_argument('method', choices=['draw', 'simulate', 'smc', 'sprt', 'val_iter'],
-                        help="The method to use: draw, simulate, SMC, SPRT, Values Iteration")
+    parser.add_argument('method', choices=['draw', 'simulate', 'smc', 'sprt', 'val_iter', 'Q'],
+                        help="The method to use: draw, simulate, SMC, SPRT, Values Iteration, Q-learning")
     parser.add_argument('filename',
                         help="The name of the file.")
     parser.add_argument('-a', '--alpha', type=float, default=0.01,
@@ -59,13 +59,13 @@ def main():
                         help="The gamma factor, used for strategy optimization. Defaults to 0.9.")
     parser.add_argument('-t', '--theta', type=float, default=None,
                         help="The test value compaired, used for SPRT. Required.")
-    parser.add_argument('-i', '--iter-max', type=float, default=10_000,
+    parser.add_argument('-i', '--iter-max', type=int, default=10_000,
                         help="Max number of iterations for SPRT. Defaults to 10.000")
     parser.add_argument('-n', '--number-of-steps', type=int, dest='n_steps', default=5,
                         help="Number of steps to apply for the simulation, defaults to 5.")
     parser.add_argument('-s', '--strategy',  default='ask_user',
                         help="Strategy to use for the simulation, defaults to 'ask_user'.")
-    parser.add_argument('-v', '--verbose', type=int, default=1, choices=[0,1,2],
+    parser.add_argument('-v', '--verbose', type=int, default=1,
                         help="0: no prints; 1: main prints; 2: all prints")
     parser.add_argument('-I', '--initial-state', default=None,
                         help="Initial state label for the simulation, defaults to the first one.")
@@ -93,7 +93,10 @@ def main():
         mdp.sprt(args.terminal_state, args.n_steps, args.alpha, args.beta,
                  args.epsilon, args.theta, args.iter_max, args.verbose)
     elif args.method == 'val_iter':
-        mdp.value_iteration(args.gamma, args.epsilon, args.iter_max)
+        mdp.value_iteration(args.gamma, args.epsilon, args.iter_max, args.verbose)
+    elif args.method == 'Q':
+        mdp.Q_learning(args.gamma, args.iter_max, args.verbose)
+
 
 # to compile grammar: $ antlr4 -Dlanguage=Python3 gram.g4
 

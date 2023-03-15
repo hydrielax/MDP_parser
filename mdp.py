@@ -107,13 +107,16 @@ class MDP:
             f"Initial State: {self.states_labels[self.initial_state]}"
         ])
 
-    def simulate(self, n_steps: int, strategy: str, verbose: int) -> list[int]:
+    def simulate(self, n_steps: int, strategy: str, verbose: int, initial=None) -> tuple[list[int], int | None]:
         """Simulate n_steps in the MDP and returns the list of steps followed."""
+        if initial is None:
+            initial = self.initial_state
         strategy_func = getattr(strategy_module, strategy)
         if verbose >= 1:
-            label = self.states_labels[self.initial_state]
+            label = self.states_labels[initial]
             print(f"Start simulation from {label} with {n_steps} steps...")
-        path = [self.initial_state]
+        path = [initial]
+        action = -1
         for step in range(n_steps):
             if verbose >= 2:
                 print(f"Step {step}")
@@ -134,7 +137,7 @@ class MDP:
             path.append(next_state)
         if verbose >= 1:
             print(f"Final State: {self.states_labels[path[-1]]}")
-        return path
+        return path, action
 
     def smc(
         self,
@@ -150,7 +153,7 @@ class MDP:
             print(f"N = {N}")
         count = 0
         for _ in range(N):
-            path = self.simulate(n_steps, 'random', verbose-1)
+            path, _ = self.simulate(n_steps, 'random', verbose-1)
             if path[-1] == terminal_state:
                 count += 1
         p = count / N
@@ -176,7 +179,7 @@ class MDP:
         dm = 0
         m = 0
         while logB < logRm and logRm < logA and m < iter_max:
-            path = self.simulate(n_steps, 'random', verbose-1)
+            path, _ = self.simulate(n_steps, 'random', verbose-1)
             if path[-1] == terminal_state:
                 dm += 1
             logRm = (dm * (np.log(gamma1) - np.log(gamma0)) +
@@ -192,8 +195,9 @@ class MDP:
             print(f"Résultat : {res}")
         return res
 
-    def value_iteration(self, gamma: float, epsilon: float, iter_max: int):
-        print("Begin optimization...")
+    def value_iteration(self, gamma: float, epsilon: float, iter_max: int, verbose: int):
+        if verbose >= 1:
+            print("Begin optimization...")
         Vprev = np.inf * np.ones(self.nb_states)
         Vnext = np.zeros(self.nb_states)
         i = 0
@@ -205,8 +209,9 @@ class MDP:
                     for a in self.actions_from(sid)
                 ])
             i += 1
-        print(f"Computed in {i} steps.")
-        print("Compute strategy...")
+        if verbose >= 1:
+            print(f"Computed in {i} steps.")
+            print("Compute strategy...")
         strat = {}
         for sl, sid in self.states_id.items():
             possible_actions = self.actions_from(sid)
@@ -215,6 +220,24 @@ class MDP:
                 for a in possible_actions
             ])]]
         # affichage
-        print("Vn = ", [f"{x:.2f}" for x in Vprev])
-        print("Strat = ", strat)
+        if verbose >= 1:
+            print("Vn = ", [f"{x:.2f}" for x in Vprev])
+            print("Strat = ", strat)
         return Vprev, strat
+
+    def Q_learning(self, gamma: float, iter_max: int, verbose: int):
+        Q = np.zeros((self.nb_states, self.nb_actions))
+        Qnext = Q.copy()
+        alpha = np.ones((self.nb_states, self.nb_actions))
+        for _ in range(iter_max):
+            st = np.random.randint(self.nb_states)
+            path, at = self.simulate(1, 'random', verbose-1, initial=st)
+            st1 = path[-1]
+            rt = self.rewards[st]
+            Q = Qnext.copy()
+            deltat = rt + gamma * np.max(Q[st1]) - Q[st][at]
+            Qnext[st][at] = Q[st][at] + deltat / alpha[st, at]
+            alpha[st, at] += 1
+        if verbose >= 1:
+            print(Q)
+        return Q
