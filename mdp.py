@@ -6,13 +6,19 @@ class MDP:
 
     def __init__(self):
         self.actions_labels = []
-
-    def add_states(self, states: list[str]) -> None:
-        """Create the states list."""
-        self.states_labels = states
-        self.states_id = {state: i for i, state in enumerate(states)}
-        self.nb_states = len(self.states_labels)
+        self.states_labels = []
+        self.states_id = {}
+        self.nb_states = 0
         self.add_actions([None])
+        self.rewards = []
+
+    def add_state(self, label: str, reward: int = 0):
+        if self.states_id.get(label, None) is not None:
+            raise Exception(f"State {label} is defined twice.")
+        self.states_labels.append(label)
+        self.nb_states += 1
+        self.states_id[label] = self.nb_states - 1
+        self.rewards.append(reward)
 
     def add_actions(self, actions: list[str | None]) -> None:
         """Create the actions list."""
@@ -185,3 +191,30 @@ class MDP:
         if verbose >= 1:
             print(f"Résultat : {res}")
         return res
+
+    def value_iteration(self, gamma: float, epsilon: float, iter_max: int):
+        print("Begin optimization...")
+        Vprev = np.inf * np.ones(self.nb_states)
+        Vnext = np.zeros(self.nb_states)
+        i = 0
+        while np.linalg.norm(Vnext - Vprev) >= epsilon and i < iter_max:
+            Vprev = Vnext.copy()
+            for sid in range(self.nb_states):
+                Vnext[sid] = np.max([
+                    self.rewards[sid] + gamma * np.sum(self.probas[sid,a,:] * Vprev)
+                    for a in self.actions_from(sid)
+                ])
+            i += 1
+        print(f"Computed in {i} steps.")
+        print("Compute strategy...")
+        strat = {}
+        for sl, sid in self.states_id.items():
+            possible_actions = self.actions_from(sid)
+            strat[sl] = self.actions_labels[possible_actions[np.argmax([
+                self.rewards[sid] + gamma * np.sum(self.probas[sid,a,:] * Vprev)
+                for a in possible_actions
+            ])]]
+        # affichage
+        print("Vn = ", [f"{x:.2f}" for x in Vprev])
+        print("Strat = ", strat)
+        return Vprev, strat

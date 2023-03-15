@@ -13,8 +13,11 @@ class gramMDPListener(gramListener):
     def __init__(self):
         self.mdp = MDP()
         
-    def enterDefstates(self, ctx):
-        self.mdp.add_states([str(x) for x in ctx.ID()])
+    def enterDefstate(self, ctx):
+        if ctx.INT():
+            self.mdp.add_state(str(ctx.ID()), int(str(ctx.INT())))
+        else:
+            self.mdp.add_state(str(ctx.ID()))
 
     def enterDefactions(self, ctx):
         self.mdp.add_actions([str(x) for x in ctx.ID()])
@@ -40,8 +43,8 @@ def main():
     parser = argparse.ArgumentParser(
         prog='python main.py',
         description='Markov Decision Process Chains Analyser')
-    parser.add_argument('method', choices=['draw', 'simulate', 'smc', 'sprt'],
-                        help="The method to use: draw, simulate, SMC, or SPRT")
+    parser.add_argument('method', choices=['draw', 'simulate', 'smc', 'sprt', 'val_iter'],
+                        help="The method to use: draw, simulate, SMC, SPRT, Values Iteration")
     parser.add_argument('filename',
                         help="The name of the file.")
     parser.add_argument('-a', '--alpha', type=float, default=0.01,
@@ -52,6 +55,8 @@ def main():
                         help="The error rate, used for SMC only. Defaults to 0.05.")
     parser.add_argument('-e', '--epsilon', type=float, default=0.01,
                         help="The precision, used for SMC only. Defaults to 0.01.")
+    parser.add_argument('-g', '--gamma', type=float, default=0.9,
+                        help="The gamma factor, used for strategy optimization. Defaults to 0.9.")
     parser.add_argument('-t', '--theta', type=float, default=None,
                         help="The test value compaired, used for SPRT. Required.")
     parser.add_argument('-i', '--iter-max', type=float, default=10_000,
@@ -87,6 +92,8 @@ def main():
     elif args.method == 'sprt':
         mdp.sprt(args.terminal_state, args.n_steps, args.alpha, args.beta,
                  args.epsilon, args.theta, args.iter_max, args.verbose)
+    elif args.method == 'val_iter':
+        mdp.value_iteration(args.gamma, args.epsilon, args.iter_max)
 
 # to compile grammar: $ antlr4 -Dlanguage=Python3 gram.g4
 
