@@ -147,7 +147,7 @@ class MDP:
             print(f"Final State: {self.states_labels[path[-1]]}")
         return path, action
     
-    def model_checking(
+    def model_checking_mc(
         self,
         terminal_state_label: str,
         n_steps: int,
@@ -207,7 +207,7 @@ class MDP:
             print(f"P({self.states_labels[self.initial_state]} |= <> {terminal_state_label}) = {res}")
         return res
 
-    def model_checking_rewards(
+    def model_checking_mc_rewards(
         self,
         n_steps: int,
         gamma: float,
@@ -236,6 +236,27 @@ class MDP:
             for s in range(self.nb_states):
                 print(f"G({self.states_labels[s]}) = {y[s]:.2f}")
         return list(y)
+
+    def model_checking_mdp(
+        self,
+        terminal_state_label: str,
+        verbose: int
+    ) -> float:
+        """Check the accessibility of a state with min/max algo for MDP."""
+        # create the matrix A
+        A = np.zeros((self.nb_states * (self.nb_actions + 2), self.nb_states))
+        for s in range(self.nb_states):
+            for a in range(self.nb_actions):
+                for t in range(self.nb_states):
+                    i, j = s * (self.nb_actions + 2) + a, t
+                    if t == s:
+                        A[i, j] = 1 - self.probas[s, a, t]
+                    else:
+                        A[i, j] = self.probas[s, a, t]
+            A[s * (self.nb_actions + 2) + self.nb_actions, s] = 1
+            A[s * (self.nb_actions + 2) + self.nb_actions + 1, s] = -1
+        print(A)
+
 
     def smc_mc_quantitatif(
         self,

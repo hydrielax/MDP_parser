@@ -43,7 +43,7 @@ def main():
     parser = argparse.ArgumentParser(
         prog='python main.py',
         description='Markov Decision Process Chains Analyser')
-    parser.add_argument('method', choices=['draw', 'simulate', 'check', 
+    parser.add_argument('method', choices=['draw', 'simulate', 'check', 'check_mdp',
                                            'check_rewards', 'SMC', 'SMC_quali',
                                            'RL_VI', 'RL_QL'],
                         help="The method to use")
@@ -89,10 +89,12 @@ def main():
         print(mdp)
     elif args.method == 'simulate':
         mdp.simulate(args.n_steps, args.strategy, args.verbose)
-    elif args.method == 'check':
-        mdp.model_checking(args.terminal_state, args.n_steps, args.verbose)
-    elif args.method == 'check_rewards':
-        mdp.model_checking_rewards(args.n_steps, args.gamma, args.verbose)
+    elif args.method == 'check_mc':
+        mdp.model_checking_mc(args.terminal_state, args.n_steps, args.verbose)
+    elif args.method == 'check_mc_rewards':
+        mdp.model_checking_mc_rewards(args.n_steps, args.gamma, args.verbose)
+    elif args.method == 'check_mdp':
+        mdp.model_checking_mdp(args.terminal_state, args.verbose)
     elif args.method == 'SMC':
         mdp.smc_mc_quantitatif(args.terminal_state, args.n_steps, args.epsilon,
                                args.delta, args.verbose)
