@@ -43,8 +43,8 @@ def main():
     parser = argparse.ArgumentParser(
         prog='python main.py',
         description='Markov Decision Process Chains Analyser')
-    parser.add_argument('method', choices=['draw', 'simulate', 'smc', 'sprt', 'val_iter', 'Q'],
-                        help="The method to use: draw, simulate, SMC, SPRT, Values Iteration, Q-learning")
+    parser.add_argument('method', choices=['draw', 'simulate', 'SMC', 'SMC_quali', 'RL_VI', 'RL_QL'],
+                        help="The method to use")
     parser.add_argument('filename',
                         help="The name of the file.")
     parser.add_argument('-a', '--alpha', type=float, default=0.01,
@@ -87,15 +87,18 @@ def main():
         print(mdp)
     elif args.method == 'simulate':
         mdp.simulate(args.n_steps, args.strategy, args.verbose)
-    elif args.method == 'smc':
-        mdp.smc(args.terminal_state, args.n_steps, args.epsilon, args.delta, args.verbose)
-    elif args.method == 'sprt':
-        mdp.sprt(args.terminal_state, args.n_steps, args.alpha, args.beta,
-                 args.epsilon, args.theta, args.iter_max, args.verbose)
-    elif args.method == 'val_iter':
-        mdp.value_iteration(args.gamma, args.epsilon, args.iter_max, args.verbose)
-    elif args.method == 'Q':
-        mdp.Q_learning(args.gamma, args.iter_max, args.verbose)
+    elif args.method == 'SMC':
+        mdp.smc_mc_quantitatif(args.terminal_state, args.n_steps, args.epsilon,
+                               args.delta, args.verbose)
+    elif args.method == 'SMC_quali':
+        mdp.smc_mc_qualitatif(args.terminal_state, args.n_steps, args.alpha,
+                              args.beta, args.epsilon, args.theta,
+                              args.iter_max, args.verbose)
+    elif args.method == 'RL_VI':
+        mdp.rl_value_iteration(args.gamma, args.epsilon, args.iter_max,
+                               args.verbose)
+    elif args.method == 'RL_QL':
+        mdp.rl_Q_learning(args.gamma, args.iter_max, args.verbose)
 
 
 # to compile grammar: $ antlr4 -Dlanguage=Python3 gram.g4

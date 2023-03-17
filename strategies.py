@@ -14,7 +14,7 @@ def ask_user(history: list[int], mdp: 'MDP') -> int:
     return mdp.actions_id[action]
 
 def random(history: list[int], mdp: 'MDP') -> int:
-    """Renvoie une action en fonction de l'historique."""
-    possible_actions = [mdp.actions_labels[a] for a in mdp.actions_from(history[-1])]
+    """Choisit l'action de manière aléatoire."""
+    possible_actions = mdp.actions_from(history[-1])
     action = rd.choice(possible_actions)
-    return mdp.actions_id[action]
+    return action

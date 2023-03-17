@@ -85,6 +85,13 @@ class MDP:
             self.initial_state = 0
         else:
             self.initial_state = self.states_id[initial_state]
+    
+    def is_mc(self) -> bool:
+        """Indicates if the model is a Markov Chain (MC) or a Markov Decision
+        Process (MDP)."""
+        if len(self.actions_labels) == 1 and self.actions_labels[0] == None:
+            return True
+        return False
 
     def __repr__(self):
         """Returns a representation of the graph """
@@ -139,7 +146,7 @@ class MDP:
             print(f"Final State: {self.states_labels[path[-1]]}")
         return path, action
 
-    def smc(
+    def smc_mc_quantitatif(
         self,
         terminal_state_label: str,
         n_steps: int,
@@ -147,6 +154,10 @@ class MDP:
         delta: float,
         verbose: int
     ) -> float:
+        """
+        Compute the probability to reach a state in a MC with Monte-Carlo.
+        """
+        assert self.is_mc(), """The model is not a Markov Chain."""
         terminal_state = self.states_id[terminal_state_label]
         N = int(np.ceil((np.log(2) - np.log(delta)) / (4*eps**2)))
         if verbose >= 1:
@@ -154,14 +165,14 @@ class MDP:
         count = 0
         for _ in range(N):
             path, _ = self.simulate(n_steps, 'random', verbose-1)
-            if path[-1] == terminal_state:
+            if terminal_state in path:
                 count += 1
         p = count / N
         if verbose >= 1:
             print(f"P(M|= <>(<={n_steps}) {terminal_state_label}) = {p}")
         return p
 
-    def sprt(
+    def smc_mc_qualitatif(
         self,
         terminal_state_label: str,
         n_steps: int,
@@ -172,6 +183,11 @@ class MDP:
         iter_max: int,
         verbose: int
     ) -> bool | None:
+        """
+        Check if the probability to reach a state in a MC is greater than
+        theta, with epsilon-confidence. Uses SPRT algorithm.
+        """
+        assert self.is_mc() == 'MC', """The model is not a Markov Chain."""
         terminal_state = self.states_id[terminal_state_label]
         logA, logB = np.log(((1 - beta) / alpha, beta / (1 - alpha)))
         gamma1, gamma0 = theta - eps, theta + eps
@@ -186,16 +202,22 @@ class MDP:
                      (m - dm) * (np.log(1 - gamma1) - np.log(1 - gamma0)))
             m += 1
         if logRm >= logA:
-            res = False
-        elif logRm <= logB:
-            res = True
-        else:
-            res = None
+            if verbose >= 1:
+                print(f"P(M |= <>(≤ {n_steps}) {terminal_state_label}) ≤ {theta} (with ⍺={alpha:.2%} of confidence)")
+            return False
+        if logRm <= logB:
+            if verbose >= 1:
+                print(f"P(M |= <>(≤ {n_steps}) {terminal_state_label}) ≥ {theta} (with β={beta:.2%} of confidence)")
+            return True
         if verbose >= 1:
-            print(f"Résultat : {res}")
-        return res
+            print(f"Not able to assert that P(M |= <>(≤ {n_steps}) {terminal_state_label}) ≥ {theta}")
+        return None
 
-    def value_iteration(self, gamma: float, epsilon: float, iter_max: int, verbose: int):
+    def rl_value_iteration(self, gamma: float, epsilon: float, iter_max: int, verbose: int):
+        """
+        Compute the best strategy to maximize the rewards,
+        with value iterations algorithm.
+        """
         if verbose >= 1:
             print("Begin optimization...")
         Vprev = np.inf * np.ones(self.nb_states)
@@ -225,7 +247,11 @@ class MDP:
             print("Strat = ", strat)
         return Vprev, strat
 
-    def Q_learning(self, gamma: float, iter_max: int, verbose: int):
+    def rl_Q_learning(self, gamma: float, iter_max: int, verbose: int):
+        """
+        Compute the best strategy to maximize the rewards,
+        with Q-learning algorithm.
+        """
         Q = np.zeros((self.nb_states, self.nb_actions))
         Qnext = Q.copy()
         alpha = np.ones((self.nb_states, self.nb_actions))
@@ -238,6 +264,11 @@ class MDP:
             deltat = rt + gamma * np.max(Q[st1]) - Q[st][at]
             Qnext[st][at] = Q[st][at] + deltat / alpha[st, at]
             alpha[st, at] += 1
+        Q = Qnext.copy()
+        strat = { s: self.actions_labels[np.argmax(Q[s])]
+                  for s in range(self.nb_states)
+                }
         if verbose >= 1:
-            print(Q)
+            print("Q = \n", Q)
+            print("Strat = ", strat)
         return Q
