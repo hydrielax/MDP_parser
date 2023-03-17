@@ -43,7 +43,9 @@ def main():
     parser = argparse.ArgumentParser(
         prog='python main.py',
         description='Markov Decision Process Chains Analyser')
-    parser.add_argument('method', choices=['draw', 'simulate', 'SMC', 'SMC_quali', 'RL_VI', 'RL_QL'],
+    parser.add_argument('method', choices=['draw', 'simulate', 'check', 
+                                           'check_rewards', 'SMC', 'SMC_quali',
+                                           'RL_VI', 'RL_QL'],
                         help="The method to use")
     parser.add_argument('filename',
                         help="The name of the file.")
@@ -87,6 +89,10 @@ def main():
         print(mdp)
     elif args.method == 'simulate':
         mdp.simulate(args.n_steps, args.strategy, args.verbose)
+    elif args.method == 'check':
+        mdp.model_checking(args.terminal_state, args.n_steps, args.verbose)
+    elif args.method == 'check_rewards':
+        mdp.model_checking_rewards(args.n_steps, args.gamma, args.verbose)
     elif args.method == 'SMC':
         mdp.smc_mc_quantitatif(args.terminal_state, args.n_steps, args.epsilon,
                                args.delta, args.verbose)

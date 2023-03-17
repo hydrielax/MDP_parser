@@ -19,6 +19,7 @@ class MDP:
         self.nb_states += 1
         self.states_id[label] = self.nb_states - 1
         self.rewards.append(reward)
+        self.probas = np.zeros((self.nb_states, self.nb_actions, self.nb_states))
 
     def add_actions(self, actions: list[str | None]) -> None:
         """Create the actions list."""
@@ -145,6 +146,96 @@ class MDP:
         if verbose >= 1:
             print(f"Final State: {self.states_labels[path[-1]]}")
         return path, action
+    
+    def model_checking(
+        self,
+        terminal_state_label: str,
+        n_steps: int,
+        verbose: int
+    ) -> float:
+        """Check if a state is accessible in the model."""
+        if verbose >= 1:
+            print(f"Compute for {n_steps if n_steps > 0 else 'infinite'} steps")
+        # reduce the probability matrix to 2 dim
+        assert self.is_mc(), """The model is not a Markov Chain."""
+        P = self.probas[:, 0, :]
+        # build the S1 set
+        S1 = { self.states_id[terminal_state_label] }
+        if not n_steps > 0:  # do not build S1 for finite number of steps
+            s = 0
+            while s < self.nb_states:
+                if (not s in S1 and
+                    all([P[s, t]==0 for t in range(self.nb_states) if not t in S1])
+                ):
+                    S1.add(s); s = -1
+                s += 1
+        # build the S0 set
+        S0 = set()
+        s = 0
+        while s < self.nb_states:
+            if (not s in S0 and
+                not s in S1 and (
+                P[s,s] == 1 or
+                all([P[s, t]==0 for t in range(self.nb_states) if not t in S0 and t != s])
+            )):
+               S0.add(s); s = -1
+            s += 1
+        # calcul de S?
+        S = set(range(self.nb_states))
+        S = S.difference(S0, S1)
+        # definition de A et B
+        A = P[np.ix_(list(S), list(S))]
+        b = np.array([np.sum(P[s, list(S1)]) for s in S])
+        # cas infini : on résout y = Ay + b
+        if n_steps > 0:
+            y = np.zeros(len(S))
+            for _ in range(n_steps):
+                y = A.dot(y) + b
+        else:
+            y = np.linalg.solve(np.eye(len(S)) - A, b)
+        # retourne le résultat
+        if self.initial_state in S1:
+            if verbose >= 1:
+                print(f"P({self.states_labels[self.initial_state]} |= <> {terminal_state_label}) = 1")
+            return 1
+        if self.initial_state in S0:
+            if verbose >= 1:
+                print(f"P({self.states_labels[self.initial_state]} |= <> {terminal_state_label}) = 0")
+            return 0
+        res = y[list(S).index(self.initial_state)]
+        if verbose >= 1:
+            print(f"P({self.states_labels[self.initial_state]} |= <> {terminal_state_label}) = {res}")
+        return res
+
+    def model_checking_rewards(
+        self,
+        n_steps: int,
+        gamma: float,
+        verbose: int
+    ) -> list[float]:
+        """Check if a state is accessible in the model and compute rewards."""
+        if verbose >= 1:
+            print(f"Compute for {n_steps if n_steps > 0 else 'infinite'} steps")
+        # reduce the probability matrix to 2 dim
+        assert self.is_mc(), """The model is not a Markov Chain."""
+        P = self.probas[:, 0, :]
+        # 
+        r = np.array(self.rewards)
+        # cas infini : on résout y = Ay + b
+        if n_steps > 0:
+            y = np.zeros(self.nb_states)
+            for _ in range(n_steps):
+                y = gamma * P.dot(y) + r
+        else:
+            try:
+                y = np.linalg.solve(np.eye(self.nb_states) - gamma*P, r)
+            except Exception:
+                raise Exception("Model diverges")
+        # retourne le résultat
+        if verbose >= 1:
+            for s in range(self.nb_states):
+                print(f"G({self.states_labels[s]}) = {y[s]:.2f}")
+        return list(y)
 
     def smc_mc_quantitatif(
         self,

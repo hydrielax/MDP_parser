@@ -35,6 +35,15 @@ class gramListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by gramParser#c_defactions.
+    def enterC_defactions(self, ctx:gramParser.C_defactionsContext):
+        pass
+
+    # Exit a parse tree produced by gramParser#c_defactions.
+    def exitC_defactions(self, ctx:gramParser.C_defactionsContext):
+        pass
+
+
     # Enter a parse tree produced by gramParser#defstate.
     def enterDefstate(self, ctx:gramParser.DefstateContext):
         pass
@@ -77,6 +86,24 @@ class gramListener(ParseTreeListener):
 
     # Exit a parse tree produced by gramParser#transnoact.
     def exitTransnoact(self, ctx:gramParser.TransnoactContext):
+        pass
+
+
+    # Enter a parse tree produced by gramParser#c_transact.
+    def enterC_transact(self, ctx:gramParser.C_transactContext):
+        pass
+
+    # Exit a parse tree produced by gramParser#c_transact.
+    def exitC_transact(self, ctx:gramParser.C_transactContext):
+        pass
+
+
+    # Enter a parse tree produced by gramParser#c_transnoact.
+    def enterC_transnoact(self, ctx:gramParser.C_transnoactContext):
+        pass
+
+    # Exit a parse tree produced by gramParser#c_transnoact.
+    def exitC_transnoact(self, ctx:gramParser.C_transnoactContext):
         pass
 
 
