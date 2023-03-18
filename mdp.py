@@ -1,12 +1,14 @@
-import numpy as np
-import strategies as strategy_module
-from scipy.optimize import linprog
-import networkx as nx
 import matplotlib.pyplot as plt
+import networkx as nx
+import numpy as np
+from scipy.optimize import linprog
+
+import strategies as strategy_module
+
 
 class MDP:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.actions_labels = []
         self.states_labels = []
         self.states_id = {}
@@ -14,7 +16,16 @@ class MDP:
         self.add_actions([None])
         self.rewards = []
 
-    def add_state(self, label: str, reward: int = 0):
+    def add_state(self, label: str, reward: int = 0) -> None:
+        """Create a new state, with an associated reward.
+
+        Args:
+            label (str): The label of the new state.
+            reward (int, optional): The reward of the state. Defaults to 0.
+
+        Raises:
+            Exception: raised if label already exists.
+        """
         if self.states_id.get(label, None) is not None:
             raise Exception(f"State {label} is defined twice.")
         self.states_labels.append(label)
@@ -24,13 +35,23 @@ class MDP:
         self.probas = np.zeros((self.nb_states, self.nb_actions, self.nb_states))
 
     def add_actions(self, actions: list[str | None]) -> None:
-        """Create the actions list."""
+        """Create multiple actions at once.
+
+        Args:
+            actions (list[str  |  None]): A list of action labels to add.
+        """
         self.actions_labels += actions
         self.actions_id = {action: i for i, action in enumerate(self.actions_labels)}
         self.nb_actions = len(self.actions_labels)
         self.probas = np.zeros((self.nb_states, self.nb_actions, self.nb_states))
 
-    def update_proba(self, source_state: str, target_state: str, action: str | None, proba: float) -> None:
+    def update_proba(
+        self,
+        source_state: str,
+        target_state: str,
+        action: str | None,
+        proba: float
+    ) -> None:
         """Update a proba from one source state to another target state through an action.
 
         Args:
@@ -51,8 +72,8 @@ class MDP:
             f"{self.actions_labels[action_id]} already defined")
         self.probas[source_id, action_id, target_id] = proba
 
-    def normalize(self):
-        """transform transitions weights to probas"""
+    def normalize(self) -> None:        
+        """Transform transitions weights to probas"""
         S = np.sum(self.probas, axis=(2))
         for i in range(S.shape[0]):
             for j in range(S.shape[1]):
@@ -61,15 +82,27 @@ class MDP:
                         self.probas[i, j, k] = self.probas[i, j, k] / S[i, j]
 
     def actions_from(self, current_state: int) -> list[int]:
-        """Returns the list of actions available from a state."""
+        """Returns the list of actions available from a state.
+
+        Args:
+            current_state (int): The state we want to know which actions are available from.
+
+        Returns:
+            list[int]: The list of indices of the available actions.
+        """
         possible_actions = []
         for action in range(self.nb_actions):
             if np.sum(self.probas[current_state][action]):
                 possible_actions.append(action)
         return possible_actions
 
-    def check_actions_coherence(self):
-        """Check that no state has transitions with and without actions"""
+    def check_actions_coherence(self) -> None:
+        """Check that no state has transitions with and without actions
+
+        Raises:
+            Exception: _description_
+            Exception: _description_
+        """
         for s in range(self.nb_states):
             possible_actions = self.actions_from(s)
             if 0 in possible_actions and len(possible_actions) != 1:
@@ -77,27 +110,36 @@ class MDP:
                     f"The state {self.states_labels[s]} has transitions with "
                     " AND without actions.")
             if len(possible_actions) == 0:
-                raise Exception(
-                    f"Aucune action possible depuis {self.states_labels[s]}")
+                print(f"Aucune action possible depuis {self.states_labels[s]}. "
+                      "Ajout d'une transition vers ce même état.")
+                self.probas[s, None, s] = 1
 
-    def build(self, initial_state):
-        """Validate and build the network."""
+    def build(self, initial_state_label: str | None = None) -> None:
+        """Validate and build the MDP.
+
+        Args:
+            initial_state_label (str, optional): The initial state of the MDP, by default the first one.
+        """
         self.normalize()
         self.check_actions_coherence()
-        if initial_state is None:
+        if initial_state_label is None:
             self.initial_state = 0
         else:
-            self.initial_state = self.states_id[initial_state]
-    
+            self.initial_state = self.states_id[initial_state_label]
+
     def is_mc(self) -> bool:
         """Indicates if the model is a Markov Chain (MC) or a Markov Decision
-        Process (MDP)."""
+        Process (MDP).
+
+        Returns:
+            bool: True if the model is a MC.
+        """
         if len(self.actions_labels) == 1 and self.actions_labels[0] == None:
             return True
         return False
 
-    def __repr__(self):
-        """Returns a representation of the graph """
+    def __repr__(self) -> str:
+        """Returns a representation of the graph."""
         return "\n".join([
             f"States: {self.states_labels}",
             f"Actions: {self.actions_labels}",
@@ -117,8 +159,24 @@ class MDP:
             f"Initial State: {self.states_labels[self.initial_state]}"
         ])
 
-    def simulate(self, n_steps: int, strategy: str, verbose: int, initial=None) -> tuple[list[int], int | None]:
-        """Simulate n_steps in the MDP and returns the list of steps followed."""
+    def simulate(
+        self,
+        n_steps: int,
+        strategy: str,
+        verbose: int,
+        initial: int | None = None
+    ) -> tuple[list[int], int | None]:
+        """Runs a simulation of the MDP.
+
+        Args:
+            n_steps (int): Number of steps to run.
+            strategy (str): The strategy to use for action choices.
+            verbose (int): The verbose level.
+            initial (int, optional): The state to start simulation from. By default the initial state of the MDP.
+
+        Returns:
+            tuple[list[int], int | None]: The path of states, and the last action used.
+        """
         if initial is None:
             initial = self.initial_state
         strategy_func = getattr(strategy_module, strategy)
@@ -155,11 +213,21 @@ class MDP:
         n_steps: int,
         verbose: int
     ) -> float:
-        """Check if a state is accessible in the model."""
+        """Model checking algorithm for Markov Chains only.
+        Compute the probability to reach a state from the initial state.
+
+        Args:
+            terminal_state_label (str): The state we want to access.
+            n_steps (int): Max number of steps allowed. Use n=0 for infinity.
+            verbose (int): The verbose level.
+
+        Returns:
+            float: The probability to access the state, ie P(I |= <>(<=n) T).
+        """
         if verbose >= 1:
             print(f"Compute for {n_steps if n_steps > 0 else 'infinite'} steps")
         # reduce the probability matrix to 2 dim
-        assert self.is_mc(), """The model is not a Markov Chain."""
+        assert self.is_mc(), "The model is not a Markov Chain."
         P = self.probas[:, 0, :]
         # build the S1 set
         S1 = { self.states_id[terminal_state_label] }
@@ -215,11 +283,21 @@ class MDP:
         gamma: float,
         verbose: int
     ) -> list[float]:
-        """Check if a state is accessible in the model and compute rewards."""
+        """Model checking algorithm for Markov Chains only, which computes the
+        rewards associated for each terminal state.
+
+        Args:
+            n_steps (int): Max number of steps allowed. Use n=0 for infinity.
+            gamma (float): The reduction factor to ensure convergence.
+            verbose (int): The verbose level.
+
+        Returns:
+            list[float]: List of gains for each state.
+        """
         if verbose >= 1:
             print(f"Compute for {n_steps if n_steps > 0 else 'infinite'} steps")
         # reduce the probability matrix to 2 dim
-        assert self.is_mc(), """The model is not a Markov Chain."""
+        assert self.is_mc(), "The model is not a Markov Chain."
         P = self.probas[:, 0, :]
         # 
         r = np.array(self.rewards)
@@ -243,13 +321,21 @@ class MDP:
         self,
         terminal_state_label: str,
         verbose: int
-    ) -> tuple[list[float], list[float]]:
-        """Check the accessibility of a state with min/max algo for MDP."""
-        S1 = self.states_id[terminal_state_label] #terminal state
+    ) -> list[float]:
+        """Check the accessibility of a state with min/max algo for MDP.
+
+        Args:
+            terminal_state_label (str): The state to reach.
+            verbose (int): The verbose level.
+
+        Returns:
+            list[float]: The probabilities to access the terminal state for each state as initial state.
+        """
+        terminal_state = self.states_id[terminal_state_label]
         # create the matrix A
         A = np.zeros((self.nb_states * (self.nb_actions + 2), self.nb_states))
         for s in range(self.nb_states):
-            if s != S1:
+            if s != terminal_state:
                 for a in range(self.nb_actions):
                     for t in range(self.nb_states):
                         i, j = s * (self.nb_actions + 2) + a, t
@@ -259,19 +345,22 @@ class MDP:
                             A[i, j] = - self.probas[s, a, t]
                 A[s * (self.nb_actions + 2) + self.nb_actions, s] = 1
                 A[s * (self.nb_actions + 2) + self.nb_actions + 1, s] = -1
+        # create matrix b
         b = np.zeros(self.nb_states * (self.nb_actions + 2))
         for s in range(self.nb_states):
-            if s != S1:
+            if s != terminal_state:
                 for a in range(self.nb_actions):
-                    b[s * (self.nb_actions + 2) + a] = self.probas[s, a ,S1]
+                    b[s * (self.nb_actions + 2) + a] = self.probas[s, a ,terminal_state]
                 b[s * (self.nb_actions + 2) + self.nb_actions] = 0
                 b[s * (self.nb_actions + 2) + self.nb_actions + 1] = -1
-        #Solving A.x <= b
-        result_max = linprog(np.ones(self.nb_states),A_ub = -A, b_ub = -b)
-        assert result_max["success"], """The algorithme did not converge or didn't find any solution for the MAX"""
-        x_max = result_max["x"]
-        x_max[S1] = 1
-        print(f"A solution was found with maximal probabilities for each starting state : {x_max}")
+        # Solving A.x <= b
+        result_max = linprog(np.ones(self.nb_states), A_ub=-A, b_ub=-b)
+        assert result_max['success'], "The algorithme did not converge or didn't find any solution for the MAX"
+        x_max = result_max['x']
+        x_max[terminal_state] = 1
+        if verbose >= 1:
+            print(f"A solution was found with maximal probabilities for each starting state:")
+            print(x_max)
         return x_max
 
     def smc_mc_quantitatif(
@@ -283,7 +372,18 @@ class MDP:
         verbose: int
     ) -> float:
         """
-        Compute the probability to reach a state in a MC with Monte-Carlo.
+        Statistical Model Checking: computes an approximation of P(I |= <>(<=n) T).
+        This method uses the Monte-Carlo algorithm, and works only for Markov Chains.
+
+        Args:
+            terminal_state_label (str): The state T to reach.
+            n_steps (int): The max number of steps allowed. Use n=0 for infinity.
+            eps (float): The precision coefficient.
+            delta (float): The error rate coefficient.
+            verbose (int): The verbose level.
+
+        Returns:
+            float: Returns an estimation of the probability.
         """
         assert self.is_mc(), """The model is not a Markov Chain."""
         terminal_state = self.states_id[terminal_state_label]
@@ -297,7 +397,7 @@ class MDP:
                 count += 1
         p = count / N
         if verbose >= 1:
-            print(f"P(M|= <>(<={n_steps}) {terminal_state_label}) = {p}")
+            print(f"P({self.states_labels[self.initial_state]} |= <>(<={n_steps}) {terminal_state_label}) ≈ {p}")
         return p
 
     def smc_mc_qualitatif(
@@ -312,8 +412,22 @@ class MDP:
         verbose: int
     ) -> bool | None:
         """
+        Statiscal Model Checking for MDC.
         Check if the probability to reach a state in a MC is greater than
-        theta, with epsilon-confidence. Uses SPRT algorithm.
+        theta, with epsilon-confidence. Uses the SPRT algorithm.
+
+        Args:
+            terminal_state_label (str): The state T to reach.
+            n_steps (int): Max number of steps allowed. Use n=0 for infinity.
+            alpha (float): alpha-confidence coefficient.
+            beta (float): beta-confidence coefficient.
+            eps (float): The precision coefficient.
+            theta (float): The upper born to test.
+            iter_max (int): Max number of iteration.
+            verbose (int): The verbose level.
+
+        Returns:
+            bool | None: True if estimation greater than theta, False if lesser than theta, None if uncertain.
         """
         assert self.is_mc() == 'MC', """The model is not a Markov Chain."""
         terminal_state = self.states_id[terminal_state_label]
@@ -341,10 +455,24 @@ class MDP:
             print(f"Not able to assert that P(M |= <>(≤ {n_steps}) {terminal_state_label}) ≥ {theta}")
         return None
 
-    def rl_value_iteration(self, gamma: float, epsilon: float, iter_max: int, verbose: int):
-        """
-        Compute the best strategy to maximize the rewards,
-        with value iterations algorithm.
+    def rl_value_iteration(
+        self,
+        gamma: float,
+        epsilon: float,
+        iter_max: int,
+        verbose: int
+    ) -> tuple[list[float], dict[str, str]]:
+        """Reinforcement Learning with Value Iterations algorithm.
+        Compute the best positional strategy to maximize rewards.
+
+        Args:
+            gamma (float): The convergence factor.
+            epsilon (float): The precision factor.
+            iter_max (int): Max number of iterations.
+            verbose (int): The verbose level.
+
+        Returns:
+            tuple[list[float], dict[str, str]]: last Vn vector and the strategy found.
         """
         if verbose >= 1:
             print("Begin optimization...")
@@ -373,12 +501,24 @@ class MDP:
         if verbose >= 1:
             print("Vn = ", [f"{x:.2f}" for x in Vprev])
             print("Strat = ", strat)
-        return Vprev, strat
+        return list(Vprev), strat
 
-    def rl_Q_learning(self, gamma: float, iter_max: int, verbose: int):
-        """
-        Compute the best strategy to maximize the rewards,
-        with Q-learning algorithm.
+    def rl_Q_learning(
+        self,
+        gamma: float,
+        iter_max: int,
+        verbose: int
+    ) -> tuple[np.ndarray, dict[str, str]]:
+        """Reinforcement Learning with Q-learning.
+        Computes the best strategy to maximize rewards.
+
+        Args:
+            gamma (float): The convergence factor.
+            iter_max (int): Max number of iterations.
+            verbose (int): The verbose level.
+
+        Returns:
+            tuple[any, dict[str, str]]: The Q matrix and the strategy found.
         """
         Q = np.zeros((self.nb_states, self.nb_actions))
         Qnext = Q.copy()
@@ -393,15 +533,21 @@ class MDP:
             Qnext[st][at] = Q[st][at] + deltat / alpha[st, at]
             alpha[st, at] += 1
         Q = Qnext.copy()
-        strat = { s: self.actions_labels[np.argmax(Q[s])]
+        strat = { self.states_labels[s]: self.actions_labels[np.argmax(Q[s])]
                   for s in range(self.nb_states)
                 }
         if verbose >= 1:
             print("Q = \n", Q)
             print("Strat = ", strat)
-        return Q
+        return Q, strat
 
-    def draw_graph(self,filename):
+    def draw_graph(self, name: str, save = False) -> None:
+        """Draw a representation of the MDP with NetworkX.
+        You can indicate a file name to save it.
+
+        Args:
+            output_file (str | None, optional): The name of the file to save in.
+        """
         G = nx.MultiDiGraph()
         nodes = []
         labels = []
@@ -412,12 +558,11 @@ class MDP:
             nodes.append(s)
             labels.append(self.states_labels[s])
             colors.append("cyan")
-            acts = self.actions_from(s)
-            for a in acts:
-                if a==0:
+            for a in self.actions_from(s):
+                if a == 0:
                     for t in range(self.nb_states):
                         if self.probas[s,a,t] != 0:
-                            G.add_edge(s,t)
+                            G.add_edge(s, t)
                             edge_labels.append(1)
                             d[(s,t)] = str(1)
                 else:
@@ -429,13 +574,16 @@ class MDP:
                     d[(s,f"{s}_{a}")] = ""
                     for t in range(self.nb_states):
                         if self.probas[s,a,t] != 0:
-                            G.add_edge(f"{s}_{a}",t)
+                            G.add_edge(f"{s}_{a}", t)
                             edge_labels.append(str(self.probas[s,a,t]))
                             d[(f"{s}_{a}",t)] = str(np.round(self.probas[s,a,t],2))
         pos = nx.spring_layout(G)
-        nx.draw_networkx_nodes(G, nodelist = nodes,pos=pos,node_color=colors)
-        nx.draw_networkx_labels(G,pos,{nodes[i]:labels[i] for i in range(len(nodes))})
-        nx.draw_networkx_edges(G,pos,edgelist=G.edges,connectionstyle="arc3,rad=0.1",arrows=True)
-        nx.draw_networkx_edge_labels(G,pos,edge_labels = d)
-        plt.title(f"MDP for file {filename}")
-        plt.savefig(f"images/{filename.split('/')[-1][:-4]}.png")
+        nx.draw_networkx_nodes(G, nodelist=nodes, pos=pos, node_color=colors) # type: ignore
+        nx.draw_networkx_labels(G, pos, {n:labels[i] for i, n in enumerate(nodes)})
+        nx.draw_networkx_edges(G, pos, edgelist=G.edges, connectionstyle="arc3,rad=0.1", arrows=True)
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=d)
+        plt.title(f"Graph of file {name}.mdp")
+        if save:
+            plt.savefig(f"images/{name}.png")
+        else:
+            plt.show()

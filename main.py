@@ -20,20 +20,20 @@ class gramMDPListener(gramListener):
             self.mdp.add_state(str(ctx.ID()))
 
     def enterDefactions(self, ctx):
-        self.mdp.add_actions([str(x) for x in ctx.ID()])
+        self.mdp.add_actions([str(x) for x in ctx.ID()]) # type: ignore
 
     def enterTransact(self, ctx):
-        ids = [str(x) for x in ctx.ID()]
+        ids = [str(x) for x in ctx.ID()] # type: ignore
         dep = ids.pop(0)
         act = ids.pop(0)
-        weights = [int(str(x)) for x in ctx.INT()]
+        weights = [int(str(x)) for x in ctx.INT()] # type: ignore
         for target, weight in zip(ids, weights):
             self.mdp.update_proba(dep, target, act, weight)
         
     def enterTransnoact(self, ctx):
-        ids = [str(x) for x in ctx.ID()]
+        ids = [str(x) for x in ctx.ID()] # type: ignore
         dep = ids.pop(0)
-        weights = [int(str(x)) for x in ctx.INT()]
+        weights = [int(str(x)) for x in ctx.INT()] # type: ignore
         for target, weight in zip(ids, weights):
             self.mdp.update_proba(dep, target, None, weight)
 
@@ -43,9 +43,9 @@ def main():
     parser = argparse.ArgumentParser(
         prog='python main.py',
         description='Markov Decision Process Chains Analyser')
-    parser.add_argument('method', choices=['draw', 'simulate', 'check', 'check_mdp',
+    parser.add_argument('method', choices=['print', 'simulate', 'check', 'check_mdp',
                                            'check_rewards', 'SMC', 'SMC_quali',
-                                           'RL_VI', 'RL_QL','draw_graph'],
+                                           'RL_VI', 'RL_QL','draw'],
                         help="The method to use")
     parser.add_argument('filename',
                         help="The name of the file.")
@@ -65,6 +65,8 @@ def main():
                         help="Max number of iterations for SPRT. Defaults to 10.000")
     parser.add_argument('-n', '--number-of-steps', type=int, dest='n_steps', default=5,
                         help="Number of steps to apply for the simulation, defaults to 5.")
+    parser.add_argument('--save', action='store_true',
+                        help="The output file to save the graph in, for the draw method.")
     parser.add_argument('-s', '--strategy',  default='ask_user',
                         help="Strategy to use for the simulation, defaults to 'ask_user'.")
     parser.add_argument('-v', '--verbose', type=int, default=1,
@@ -85,7 +87,7 @@ def main():
     walker.walk(MDP_parser, tree)
     mdp = MDP_parser.mdp
     mdp.build(args.initial_state)
-    if args.method == 'draw':
+    if args.method == 'print':
         print(mdp)
     elif args.method == 'simulate':
         mdp.simulate(args.n_steps, args.strategy, args.verbose)
@@ -107,8 +109,8 @@ def main():
                                args.verbose)
     elif args.method == 'RL_QL':
         mdp.rl_Q_learning(args.gamma, args.iter_max, args.verbose)
-    elif args.method == 'draw_graph':
-        mdp.draw_graph(args.filename)
+    elif args.method == 'draw':
+        mdp.draw_graph(args.filename.split('/')[-1][:-4], args.save)
 
 
 # to compile grammar: $ antlr4 -Dlanguage=Python3 gram.g4
