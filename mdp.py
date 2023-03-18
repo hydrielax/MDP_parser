@@ -1,6 +1,8 @@
 import numpy as np
 import strategies as strategy_module
-
+from scipy.optimize import linprog
+import networkx as nx
+import matplotlib.pyplot as plt
 
 class MDP:
 
@@ -241,22 +243,36 @@ class MDP:
         self,
         terminal_state_label: str,
         verbose: int
-    ) -> float:
+    ) -> tuple[list[float], list[float]]:
         """Check the accessibility of a state with min/max algo for MDP."""
+        S1 = self.states_id[terminal_state_label] #terminal state
         # create the matrix A
         A = np.zeros((self.nb_states * (self.nb_actions + 2), self.nb_states))
         for s in range(self.nb_states):
-            for a in range(self.nb_actions):
-                for t in range(self.nb_states):
-                    i, j = s * (self.nb_actions + 2) + a, t
-                    if t == s:
-                        A[i, j] = 1 - self.probas[s, a, t]
-                    else:
-                        A[i, j] = self.probas[s, a, t]
-            A[s * (self.nb_actions + 2) + self.nb_actions, s] = 1
-            A[s * (self.nb_actions + 2) + self.nb_actions + 1, s] = -1
-        print(A)
-
+            if s != S1:
+                for a in range(self.nb_actions):
+                    for t in range(self.nb_states):
+                        i, j = s * (self.nb_actions + 2) + a, t
+                        if t == s:
+                            A[i, j] = 1 - self.probas[s, a, t]
+                        else:
+                            A[i, j] = - self.probas[s, a, t]
+                A[s * (self.nb_actions + 2) + self.nb_actions, s] = 1
+                A[s * (self.nb_actions + 2) + self.nb_actions + 1, s] = -1
+        b = np.zeros(self.nb_states * (self.nb_actions + 2))
+        for s in range(self.nb_states):
+            if s != S1:
+                for a in range(self.nb_actions):
+                    b[s * (self.nb_actions + 2) + a] = self.probas[s, a ,S1]
+                b[s * (self.nb_actions + 2) + self.nb_actions] = 0
+                b[s * (self.nb_actions + 2) + self.nb_actions + 1] = -1
+        #Solving A.x <= b
+        result_max = linprog(np.ones(self.nb_states),A_ub = -A, b_ub = -b)
+        assert result_max["success"], """The algorithme did not converge or didn't find any solution for the MAX"""
+        x_max = result_max["x"]
+        x_max[S1] = 1
+        print(f"A solution was found with maximal probabilities for each starting state : {x_max}")
+        return x_max
 
     def smc_mc_quantitatif(
         self,
@@ -384,3 +400,42 @@ class MDP:
             print("Q = \n", Q)
             print("Strat = ", strat)
         return Q
+
+    def draw_graph(self,filename):
+        G = nx.MultiDiGraph()
+        nodes = []
+        labels = []
+        edge_labels = []
+        colors = []
+        d = {}
+        for s in range(self.nb_states):
+            nodes.append(s)
+            labels.append(self.states_labels[s])
+            colors.append("cyan")
+            acts = self.actions_from(s)
+            for a in acts:
+                if a==0:
+                    for t in range(self.nb_states):
+                        if self.probas[s,a,t] != 0:
+                            G.add_edge(s,t)
+                            edge_labels.append(1)
+                            d[(s,t)] = str(1)
+                else:
+                    nodes.append(f"{s}_{a}")
+                    labels.append(self.actions_labels[a])
+                    colors.append("yellow")
+                    G.add_edge(s,f"{s}_{a}")
+                    edge_labels.append("")
+                    d[(s,f"{s}_{a}")] = ""
+                    for t in range(self.nb_states):
+                        if self.probas[s,a,t] != 0:
+                            G.add_edge(f"{s}_{a}",t)
+                            edge_labels.append(str(self.probas[s,a,t]))
+                            d[(f"{s}_{a}",t)] = str(np.round(self.probas[s,a,t],2))
+        pos = nx.spring_layout(G)
+        nx.draw_networkx_nodes(G, nodelist = nodes,pos=pos,node_color=colors)
+        nx.draw_networkx_labels(G,pos,{nodes[i]:labels[i] for i in range(len(nodes))})
+        nx.draw_networkx_edges(G,pos,edgelist=G.edges,connectionstyle="arc3,rad=0.1",arrows=True)
+        nx.draw_networkx_edge_labels(G,pos,edge_labels = d)
+        plt.title(f"MDP for file {filename}")
+        plt.savefig(f"images/{filename.split('/')[-1][:-4]}.png")

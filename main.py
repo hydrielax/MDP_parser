@@ -45,7 +45,7 @@ def main():
         description='Markov Decision Process Chains Analyser')
     parser.add_argument('method', choices=['draw', 'simulate', 'check', 'check_mdp',
                                            'check_rewards', 'SMC', 'SMC_quali',
-                                           'RL_VI', 'RL_QL'],
+                                           'RL_VI', 'RL_QL','draw_graph'],
                         help="The method to use")
     parser.add_argument('filename',
                         help="The name of the file.")
@@ -107,6 +107,8 @@ def main():
                                args.verbose)
     elif args.method == 'RL_QL':
         mdp.rl_Q_learning(args.gamma, args.iter_max, args.verbose)
+    elif args.method == 'draw_graph':
+        mdp.draw_graph(args.filename)
 
 
 # to compile grammar: $ antlr4 -Dlanguage=Python3 gram.g4
