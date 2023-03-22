@@ -43,8 +43,8 @@ def main():
     parser = argparse.ArgumentParser(
         prog='python main.py',
         description='Markov Decision Process Chains Analyser')
-    parser.add_argument('method', choices=['print', 'simulate', 'check', 'check_mdp',
-                                           'check_rewards', 'SMC', 'SMC_quali',
+    parser.add_argument('method', choices=['print', 'simulate', 'check_mc', 'check_mdp',
+                                           'check_mc_rewards', 'SMC', 'SMC_quali',
                                            'RL_VI', 'RL_QL','draw'],
                         help="The method to use")
     parser.add_argument('filename',

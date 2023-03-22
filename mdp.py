@@ -141,7 +141,7 @@ class MDP:
     def __repr__(self) -> str:
         """Returns a representation of the graph."""
         return "\n".join([
-            f"States: {self.states_labels}",
+            f"States: {list(zip(self.states_labels, self.rewards)) if any(self.rewards) else self.states_labels}",
             f"Actions: {self.actions_labels}",
             *[
                 (f"{state} [{action}] -> " if action else f"{state} -> ")
@@ -429,7 +429,7 @@ class MDP:
         Returns:
             bool | None: True if estimation greater than theta, False if lesser than theta, None if uncertain.
         """
-        assert self.is_mc() == 'MC', """The model is not a Markov Chain."""
+        assert self.is_mc(), "The model is not a Markov Chain."
         terminal_state = self.states_id[terminal_state_label]
         logA, logB = np.log(((1 - beta) / alpha, beta / (1 - alpha)))
         gamma1, gamma0 = theta - eps, theta + eps
@@ -445,11 +445,11 @@ class MDP:
             m += 1
         if logRm >= logA:
             if verbose >= 1:
-                print(f"P(M |= <>(≤ {n_steps}) {terminal_state_label}) ≤ {theta} (with ⍺={alpha:.2%} of confidence)")
+                print(f"P(M |= <>(≤ {n_steps}) {terminal_state_label}) ≤ {theta} (with ⍺={alpha:.2%} for confidence)")
             return False
         if logRm <= logB:
             if verbose >= 1:
-                print(f"P(M |= <>(≤ {n_steps}) {terminal_state_label}) ≥ {theta} (with β={beta:.2%} of confidence)")
+                print(f"P(M |= <>(≤ {n_steps}) {terminal_state_label}) ≥ {theta} (with β={beta:.2%} for confidence)")
             return True
         if verbose >= 1:
             print(f"Not able to assert that P(M |= <>(≤ {n_steps}) {terminal_state_label}) ≥ {theta}")
